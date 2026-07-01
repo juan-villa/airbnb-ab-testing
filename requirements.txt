@@ -1,0 +1,13 @@
+# Core analysis
+pandas>=2.0
+numpy>=1.26
+scipy>=1.11
+
+# Charts
+matplotlib>=3.8
+
+# Dashboard
+streamlit>=1.35
+
+# Chart theme
+seaborn>=0.13

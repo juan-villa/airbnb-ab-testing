@@ -1,0 +1,18 @@
+{
+  "control_rate": 0.03899,
+  "treatment_rate": 0.04289,
+  "absolute_lift": 0.0039,
+  "relative_lift_pct": 10.0,
+  "z_statistic": 57.18,
+  "p_value": 0.0,
+  "p_value_label": "< 1e-300",
+  "ci_95_absolute": [
+    0.00377,
+    0.00403
+  ],
+  "ci_95_relative_pct": [
+    9.66,
+    10.35
+  ],
+  "significant_at_5pct": true
+}

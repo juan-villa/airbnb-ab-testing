@@ -1,0 +1,16 @@
+borough,room_type,total_views,control_rate,treatment_rate,relative_lift_pct
+Bronx,Entire home/apt,484585,0.03953,0.04245,7.37
+Bronx,Private room,593724,0.03863,0.04288,10.99
+Bronx,Shared room,33971,0.03826,0.04114,7.52
+Brooklyn,Entire home/apt,7170224,0.03886,0.04248,9.32
+Brooklyn,Private room,6247056,0.03916,0.04303,9.88
+Brooklyn,Shared room,212977,0.03799,0.04288,12.87
+Manhattan,Entire home/apt,7351362,0.03908,0.04294,9.88
+Manhattan,Hotel room,44257,0.03858,0.04527,17.33
+Manhattan,Private room,5518580,0.03874,0.04316,11.4
+Manhattan,Shared room,333606,0.03946,0.04402,11.58
+Queens,Entire home/apt,2227471,0.03952,0.04329,9.54
+Queens,Private room,3019784,0.03885,0.04242,9.19
+Queens,Shared room,115392,0.04077,0.04244,4.09
+Staten Island,Entire home/apt,229163,0.03791,0.04408,16.26
+Staten Island,Private room,162483,0.03849,0.0445,15.59

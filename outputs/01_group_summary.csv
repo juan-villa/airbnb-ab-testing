@@ -1,0 +1,3 @@
+experiment_group,listings,total_views,total_bookings,conversion_rate,total_revenue,revenue_per_view
+control,50913,16844932,656732,0.03899,382665342.0,22.7169
+treatment,50857,16905539,725034,0.04289,420134369.0,24.8519

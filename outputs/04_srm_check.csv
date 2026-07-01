@@ -1,0 +1,2 @@
+n_control,n_treatment,control_share,chi_square_stat,srm_verdict
+50913,50857,0.5003,0.0308,PASS
