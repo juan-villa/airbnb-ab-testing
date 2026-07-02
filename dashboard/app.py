@@ -13,12 +13,17 @@ import streamlit as st
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DB_PATH = REPO_ROOT / "outputs" / "airbnb.db"
 SIG_PATH = REPO_ROOT / "outputs" / "significance.json"
+LOGO = REPO_ROOT / "dashboard" / "assets" / "airbnb_logo_white.svg"
 
-NAVY = "#1b3b6f"
-BLUE = "#1b6ef3"
+WHITE = "#ffffff"
+PALE = "#bde0fe"
 SKY = "#8ecae6"
+STEEL = "#4a90d9"
+BLUE = "#1b6ef3"
 
-st.set_page_config(page_title="Airbnb A/B Test", page_icon="🗽", layout="wide")
+BLUES = [WHITE, PALE, SKY, STEEL, BLUE]
+
+st.set_page_config(page_title="Airbnb A/B Test", layout="wide")
 
 
 @st.cache_data
@@ -40,14 +45,16 @@ def load_data():
 
 listings, experiment, sig = load_data()
 
-st.title("One Prompt, 100,000 Listings")
+st.image(str(LOGO), width=160)
+st.title("Instant Book: A/B Test on the NYC Market")
 st.caption(
-    "What happens when every Airbnb page in New York gets a little nudge that says "
-    "'book instantly, no host approval needed'? I simulated exactly that experiment "
-    "on 100k real NYC listings. Tour the market first, then see how the test went."
+    "A simulated experiment on 102k real New York City listings. The question: "
+    "does a 'book instantly, no host approval needed' prompt raise booking "
+    "conversion? The first tab covers the market the test ran in; the second "
+    "reports the result."
 )
 
-tab_city, tab_experiment = st.tabs(["🗽 The Market", "🧪 The Experiment"])
+tab_city, tab_experiment = st.tabs(["The Market", "The Experiment"])
 
 with tab_city:
     st.subheader("The market at a glance")
@@ -61,59 +68,59 @@ with tab_city:
         f"{listings['instant_bookable'].fillna(0).astype(float).mean():.0%}",
     )
 
+    st.markdown("**What each borough offers**")
+    st.caption(
+        "Share of each borough's listings by room type. Manhattan skews toward "
+        "entire homes; the Bronx and Queens lean on private rooms."
+    )
+    room_mix = (
+        listings.groupby(["neighbourhood_group", "room_type"])
+        .size()
+        .unstack(fill_value=0)
+        .rename_axis("Borough")
+    )
+    room_mix.columns.name = "Room Type"
+    st.bar_chart(
+        room_mix, horizontal=True, stack="normalize",
+        color=BLUES[: room_mix.shape[1]], height=320,
+    )
+
     left, right = st.columns(2)
-
     with left:
-        st.markdown("**Where the listings live**")
-        by_borough = (
-            listings["neighbourhood_group"]
-            .value_counts()
-            .rename_axis("Borough")
-            .rename("Listings")
-        )
-        st.bar_chart(by_borough, color=BLUE)
-
-        st.markdown("**What a night costs, by borough**")
+        st.markdown("**Median nightly price by borough**")
         price_by_borough = (
             listings.groupby("neighbourhood_group")["price"]
             .median()
-            .sort_values(ascending=False)
+            .sort_values()
             .rename_axis("Borough")
             .rename("Median Nightly Price ($)")
         )
-        st.bar_chart(price_by_borough, color=NAVY)
+        st.bar_chart(price_by_borough, horizontal=True, color=SKY, height=300)
 
     with right:
-        st.markdown("**What kind of place you get**")
-        by_room = (
-            listings["room_type"]
-            .value_counts()
-            .rename_axis("Room Type")
-            .rename("Listings")
-        )
-        st.bar_chart(by_room, color=SKY)
-
-        st.markdown("**The price spread**")
+        st.markdown("**Nightly price distribution**")
         price_bins = pd.cut(listings["price"], bins=range(50, 1251, 100))
         price_hist = (
             price_bins.value_counts()
             .sort_index()
-            .rename_axis("Nightly Price ($)")
+            .rename_axis("Nightly Price ($), Bin Start")
             .rename("Listings")
         )
-        price_hist.index = [f"${b.left}-{b.right}" for b in price_hist.index]
-        st.bar_chart(price_hist, color=BLUE)
+        # Numeric bin edges keep the axis in price order (string labels
+        # would sort alphabetically and shuffle the bars)
+        price_hist.index = [b.left for b in price_hist.index]
+        st.bar_chart(price_hist, color=STEEL, height=300)
 
     st.caption(
-        "Fun fact: prices in this dataset run a suspiciously tidy $50 to $1,200, "
-        "and the median barely moves between boroughs. Real NYC is spikier; this "
-        "is the Kaggle version of the city."
+        "Prices in this dataset run a tidy \\$50 to \\$1,200 with a nearly flat "
+        "distribution, and the median barely moves between boroughs. The real "
+        "city is spikier; this is the cleaned-up Kaggle version of New York."
     )
 
 with tab_experiment:
-    st.subheader("The headline")
+    st.subheader("The result")
 
-    verdict = "Ship it ✅" if sig["significant_at_5pct"] else "Not significant ⚠️"
+    verdict = "Ship it" if sig["significant_at_5pct"] else "Not significant"
     k = st.columns(4)
     k[0].metric("Control Conversion", f"{sig['control_rate']:.2%}")
     k[1].metric(
@@ -124,33 +131,47 @@ with tab_experiment:
     k[2].metric("P-Value", sig["p_value_label"])
     k[3].metric("Verdict", verdict)
 
-    st.info(
+    st.write(
         f"The 95% confidence interval on the relative lift is "
-        f"[{sig['ci_95_relative_pct'][0]:+.1f}%, {sig['ci_95_relative_pct'][1]:+.1f}%]. "
-        "Zero is nowhere near that interval, so this is not a fluke.",
-        icon="📐",
+        f"[{sig['ci_95_relative_pct'][0]:+.1f}%, {sig['ci_95_relative_pct'][1]:+.1f}%], "
+        "comfortably clear of zero. The prompt earns its place on the page."
     )
 
-    st.subheader("Is the experiment healthy?")
+    st.subheader("Was the experiment healthy?")
     counts = experiment["experiment_group"].value_counts()
     share_control = counts["control"] / counts.sum()
     srm_ok = abs(share_control - 0.5) < 0.01
     st.write(
-        f"We split {counts.sum():,} listings and got {counts['control']:,} control vs "
-        f"{counts['treatment']:,} treatment ({share_control:.1%} / {1 - share_control:.1%}). "
+        f"The design called for a 50/50 split; the hash assignment delivered "
+        f"{counts['control']:,} control and {counts['treatment']:,} treatment listings "
+        f"({share_control:.1%} / {1 - share_control:.1%}). "
         + (
-            "That is as close to a coin flip as you could ask for, so the "
-            "randomization checks out."
+            "The chart below makes the same point visually: both groups drew "
+            "their traffic from the same places, which is what sound "
+            "randomization looks like."
             if srm_ok
-            else "That is further from 50/50 than chance allows. Something is broken; "
-            "do not trust any metric below."
+            else "That deviation is larger than chance allows, so the metrics "
+            "above should not be trusted until the assignment is debugged."
         )
     )
 
-    st.subheader("Slice it yourself")
+    traffic_mix = (
+        experiment.groupby(["experiment_group", "borough"])["views"]
+        .sum()
+        .unstack(fill_value=0)
+    )
+    traffic_mix.index = traffic_mix.index.str.title()
+    traffic_mix.index.name = "Group"
+    traffic_mix.columns.name = "Borough"
+    st.markdown("**Where each group's page views came from**")
+    st.bar_chart(
+        traffic_mix, horizontal=True, stack="normalize",
+        color=BLUES[: traffic_mix.shape[1]], height=220,
+    )
+
+    st.subheader("Slice the result")
     st.caption(
-        "Pick any corner of the city and see if the prompt still works there. "
-        "Spoiler: it pretty much always does."
+        "Filter to any part of the city to see whether the lift holds there."
     )
 
     f = st.columns(2)
@@ -178,11 +199,11 @@ with tab_experiment:
 
     left, right = st.columns(2)
     with left:
-        st.markdown("**Conversion rate, this slice**")
-        st.bar_chart(grp["Conversion Rate"], color=BLUE)
+        st.markdown("**Conversion rate in this slice**")
+        st.bar_chart(grp["Conversion Rate"], horizontal=True, color=SKY, height=200)
     with right:
-        st.markdown("**Revenue per view, this slice**")
-        st.bar_chart(grp["Revenue per View ($)"], color=NAVY)
+        st.markdown("**Revenue per view in this slice**")
+        st.bar_chart(grp["Revenue per View ($)"], horizontal=True, color=STEEL, height=200)
 
     seg = (
         sub.groupby(["borough", "room_type", "experiment_group"])[["views", "bookings"]]
@@ -210,7 +231,7 @@ with tab_experiment:
     )
 
     st.caption(
-        "A word of caution before anyone gets excited about one row: the experiment "
-        "was powered for the overall effect, not for individual segments. Small "
-        "slices bounce around the true lift just from noise."
+        "A note on reading the table: the experiment was powered for the overall "
+        "effect, not for individual segments. Smaller slices scatter around the "
+        "true lift, so treat single rows as directional."
     )

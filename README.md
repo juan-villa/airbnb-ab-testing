@@ -53,6 +53,9 @@ the randomization is trustworthy.
 as a whole (prices, boroughs, room types), the other walks through the
 experiment readout with an interactive segment explorer.
 
+The Airbnb name and logo are trademarks of Airbnb, Inc., used here only to
+give this personal analysis project some visual context.
+
 ## Project structure
 
 ```
