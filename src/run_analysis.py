@@ -41,12 +41,12 @@ plt.rcParams.update({
     "savefig.bbox": "tight",
 })
 
-ACCENT = "#1b3b6f"       # deep navy for the treatment series
-NEUTRAL = "#999999"      # grey for the control baseline
-POSITIVE = "#1a7f37"     # green / red for signed lift values
-NEGATIVE = "#c1121f"
+NAVY = "#1b3b6f"         # treatment series
+SKY = "#8ecae6"          # control baseline
+BLUE = "#1b6ef3"         # positive lift bars
+RED = "#c1121f"          # negative lift bars (kept for meaning, rarely appears)
 
-COLORS = {"control": NEUTRAL, "treatment": ACCENT}
+COLORS = {"control": SKY, "treatment": NAVY}
 
 
 def run_sql_files(conn: sqlite3.Connection) -> dict[str, pd.DataFrame]:
@@ -132,7 +132,7 @@ def chart_segment_lift(segments: pd.DataFrame) -> None:
     df = segments.sort_values("relative_lift_pct")
     labels = df["borough"] + " - " + df["room_type"]
     fig, ax = plt.subplots(figsize=(8, 0.45 * len(df) + 1.5))
-    colors = [POSITIVE if v > 0 else NEGATIVE for v in df["relative_lift_pct"]]
+    colors = [BLUE if v > 0 else RED for v in df["relative_lift_pct"]]
     ax.barh(labels, df["relative_lift_pct"], color=colors)
     ax.axvline(0, color="#333333", linewidth=0.8)
     ax.set_xlabel("Relative lift in conversion (%)")

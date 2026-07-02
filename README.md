@@ -1,46 +1,57 @@
-# Airbnb A/B Test Analysis: Instant-Book Prompt
+# One Prompt, 100,000 Listings: An Airbnb A/B Test
 
-An end-to-end, fully reproducible A/B testing project built on ~102k real NYC
-Airbnb listings ([Kaggle Airbnb Open Data](https://www.kaggle.com/datasets/arianazmoudeh/airbnbopendata)).
-It simulates a product experiment, analyzes it with **SQL + statistics**, and
-presents the readout in a **Streamlit dashboard**.
+Would a "book instantly, no host approval needed" prompt get more people to
+book? That is the kind of question a product team settles with an A/B test,
+so I built one end to end: real data, simulated experiment, SQL readout,
+statistics, and a dashboard.
 
-## The experiment
+The data is ~102k real NYC listings from
+[Kaggle's Airbnb Open Data](https://www.kaggle.com/datasets/arianazmoudeh/airbnbopendata).
+The experiment on top of it is simulated, and that is the fun part: I baked
+a known +10% lift into the simulated bookings, which means the analysis has
+a right answer. If the pipeline is sound, it should find +10%. It does.
 
-> **Hypothesis:** adding a prominent *"Book instantly, no host approval
-> needed"* prompt on a listing page increases booking conversion.
+## How the experiment works
 
 | Design choice | Value |
 |---|---|
-| Unit of randomization | Listing (deterministic hash of listing id, salted by experiment name) |
+| Unit of randomization | Listing (salted hash of listing id, like real experiment platforms) |
 | Split | 50 / 50 |
 | Primary metric | Booking conversion rate (bookings / page views) |
 | Secondary metric | Revenue per page view |
 | Duration | 28 simulated days |
-| Ground-truth effect | **+10% relative lift** baked into the simulation |
+| Ground-truth effect | +10% relative lift on conversion odds |
 
-Because the outcomes are simulated with a *known* effect, the project doubles
-as a validation exercise: does the analysis pipeline correctly recover a +10%
-lift that we know is really there? **It does**: the estimate lands at
-+10.0% with a 95% CI of [+9.7%, +10.4%].
+Traffic follows listing popularity (Poisson on reviews per month) and
+baseline conversion depends on rating and price, so the two groups are messy
+in realistic ways rather than uniform.
 
-## Results
+## What the test found
 
 | Metric | Control | Treatment | Lift |
 |---|---|---|---|
 | Conversion rate | 3.90% | 4.29% | **+10.0%** (p < 1e-300) |
 | Revenue / view | $22.72 | $24.85 | +9.4% |
 
+The 95% confidence interval on the relative lift is [+9.7%, +10.4%], right
+on top of the true +10%.
+
 ![Conversion by group](outputs/chart_conversion_by_group.png)
 
-The lift is broad-based: every borough x room-type segment moved in the same
-direction, which is what you want to see before shipping:
+Every borough and room type moved in the same direction, which is exactly
+what you want to see before shipping something:
 
 ![Segment lift](outputs/chart_segment_lift.png)
 
-Experiment health: the observed split was 50.03% / 49.97%, and the sample-ratio
-mismatch (SRM) chi-square check passes (χ² = 0.03, well under the 3.84
-threshold), so the randomization is trustworthy.
+Health check: the observed split came out 50.03% / 49.97%. The sample-ratio
+mismatch chi-square test passes easily (0.03 against a 3.84 threshold), so
+the randomization is trustworthy.
+
+## The dashboard
+
+`make dashboard` opens a two-tab Streamlit app: one tab tours the NYC market
+as a whole (prices, boroughs, room types), the other walks through the
+experiment readout with an interactive segment explorer.
 
 ## Project structure
 
@@ -56,35 +67,30 @@ threshold), so the randomization is trustworthy.
 │   ├── 03_segment_breakdown.sql # lift by borough x room type
 │   └── 04_srm_check.sql     # sample-ratio-mismatch health check
 ├── dashboard/
-│   └── app.py               # Streamlit readout dashboard
+│   └── app.py               # Streamlit dashboard (market + experiment tabs)
 └── outputs/                 # readout CSVs, significance.json, charts
 ```
 
-## Reproduce it
+## Run it yourself
 
 ```bash
 pip install -r requirements.txt
-make all          # runs clean -> simulate -> analyze (or run the 3 scripts in src/ in order)
-make dashboard    # launches the Streamlit dashboard
+make all          # clean -> simulate -> analyze
+make dashboard    # launch the Streamlit app
 ```
 
-Everything is seeded (`SEED = 42`), so a fresh clone reproduces the exact
-numbers above.
+Everything is seeded, so a fresh clone lands on the exact numbers above.
 
 ## Methodology notes
 
-- **Deterministic hash assignment** (`md5(experiment_name + listing_id)`)
-  mirrors how real experimentation platforms randomize: stateless,
-  reproducible, and re-salted per experiment.
-- **Heterogeneous units**: traffic follows listing popularity (Poisson on
-  reviews/month) and baseline conversion depends on rating and price via a
-  logistic model, so the groups are messy in realistic ways, not uniform.
-- **Two-proportion z-test** with pooled standard error for the hypothesis
-  test; unpooled standard error for the confidence interval on the lift.
-- **SRM check first**: if the observed split deviates from the designed
-  50/50 beyond chance, no metric can be trusted, so the health check is
-  part of the standard readout.
-- **Segment results are directional**: the experiment is powered for the
-  topline; borough x room-type cuts are smaller samples and read as noise
-  bands around the true effect (visible in the segment chart: 4-17% around
-  the true +10%).
+- **Hash-based assignment**: `md5(experiment_name + listing_id)` decides the
+  group. Stateless, reproducible, and re-salted per experiment, which is how
+  production experimentation platforms actually do it.
+- **Two-proportion z-test**: pooled standard error for the hypothesis test,
+  unpooled for the confidence interval on the lift.
+- **SRM check comes first**: if the observed split drifts from the designed
+  50/50 beyond chance, nothing else in the readout can be trusted.
+- **Segment cuts are directional**: the test is powered for the topline, so
+  borough x room-type slices wobble around the true effect (4-17% in the
+  segment chart, all around the true +10%). That spread is a nice, concrete
+  picture of segment-level noise.
