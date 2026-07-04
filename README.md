@@ -1,15 +1,13 @@
 # One Prompt, 100,000 Listings: An Airbnb A/B Test
 
 Would a "book instantly, no host approval needed" prompt get more people to
-book? That is the kind of question a product team settles with an A/B test,
-so I built one end to end: real data, simulated experiment, SQL readout,
+book? This analysis uses an A/B testing schema using the following: real data, a simulated experiment, SQL readouts,
 statistics, and a dashboard.
 
 The data is ~102k real NYC listings from
 [Kaggle's Airbnb Open Data](https://www.kaggle.com/datasets/arianazmoudeh/airbnbopendata).
-The experiment on top of it is simulated, and that is the fun part: I baked
-a known +10% lift into the simulated bookings, which means the analysis has
-a right answer. If the pipeline is sound, it should find +10%. It does.
+The experiment on top of it is simulated. A  known +10% lift was baked into the simulated bookings, which means the analysis has
+a right answer. If the measurement is accurate, it should find +10% (as it does).
 
 ## How the experiment works
 
@@ -38,8 +36,7 @@ on top of the true +10%.
 
 ![Conversion by group](outputs/chart_conversion_by_group.png)
 
-Every borough and room type moved in the same direction, which is exactly
-what you want to see before shipping something:
+Every borough and room type moved in the same direction, which is ideal:
 
 ![Segment lift](outputs/chart_segment_lift.png)
 
@@ -87,13 +84,12 @@ Everything is seeded, so a fresh clone lands on the exact numbers above.
 ## Methodology notes
 
 - **Hash-based assignment**: `md5(experiment_name + listing_id)` decides the
-  group. Stateless, reproducible, and re-salted per experiment, which is how
-  production experimentation platforms actually do it.
+  group.
 - **Two-proportion z-test**: pooled standard error for the hypothesis test,
   unpooled for the confidence interval on the lift.
-- **SRM check comes first**: if the observed split drifts from the designed
-  50/50 beyond chance, nothing else in the readout can be trusted.
+- **SRM check is priority**: if the observed split drifts from the designed
+  50/50 beyond chance, nothing else in the readout should be trusted.
 - **Segment cuts are directional**: the test is powered for the topline, so
-  borough x room-type slices wobble around the true effect (4-17% in the
-  segment chart, all around the true +10%). That spread is a nice, concrete
+  borough x room-type slices hover around the true effect (4-17% in the
+  segment chart, all around the true +10%). That spread is a concrete
   picture of segment-level noise.
