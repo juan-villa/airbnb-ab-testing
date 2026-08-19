@@ -1,4 +1,4 @@
-# One Prompt, 100,000 Listings: An Airbnb A/B Test
+# Airbnb A/B Testing and Simulation
 
 Would a "book instantly, no host approval needed" prompt get more people to
 book? This analysis uses an A/B testing schema using the following: real data, a simulated experiment, SQL readouts,
