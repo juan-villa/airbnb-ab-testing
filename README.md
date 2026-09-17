@@ -71,7 +71,7 @@ give this personal analysis project some visual context.
 └── outputs/                 # readout CSVs, significance.json, charts
 ```
 
-## Run it yourself
+## Replication
 
 ```bash
 pip install -r requirements.txt
@@ -79,7 +79,7 @@ make all          # clean -> simulate -> analyze
 make dashboard    # launch the Streamlit app
 ```
 
-Everything is seeded, so a fresh clone lands on the exact numbers above.
+A clone returns the exact numbers above.
 
 ## Methodology notes
 
